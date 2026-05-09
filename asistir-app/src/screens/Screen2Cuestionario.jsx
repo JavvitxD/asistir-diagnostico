@@ -4,9 +4,15 @@ import { PREGUNTAS, ETAPA_NOMBRE, ETAPA_COLOR, ETAPA_BG } from "../data/pregunta
 
 const BLUE = "#1a4480";
 
-export default function Screen2Cuestionario({ onNext, onBack }) {
+export default function Screen2Cuestionario({ onNext, onBack, onPreguntaChange }) {
   const [qi, setQi] = useState(0);
   const [resp, setResp] = useState(PREGUNTAS.map(() => ({ val: null, obs: "" })));
+
+  // Notifica al padre qué pregunta está activa para el bot
+  const irA = (idx) => {
+    setQi(idx);
+    if (onPreguntaChange) onPreguntaChange(PREGUNTAS[idx].t);
+  };
 
   const q = PREGUNTAS[qi];
   const r = resp[qi];
@@ -18,9 +24,9 @@ export default function Screen2Cuestionario({ onNext, onBack }) {
 
   const navNext = () => {
     if (isLast) { onNext(resp); return; }
-    setQi((i) => i + 1);
+    irA(qi + 1);
   };
-  const navPrev = () => { if (qi > 0) setQi((i) => i - 1); };
+  const navPrev = () => { if (qi > 0) irA(qi - 1); };
 
   const btnStyle = (color, bg, active) => ({
     padding: "8px 20px", borderRadius: 20, fontSize: 13, fontWeight: 600,
@@ -51,7 +57,17 @@ export default function Screen2Cuestionario({ onNext, onBack }) {
 
       {/* Question */}
       <div style={{ padding: "1.5rem" }}>
-        <p style={{ fontSize: 15, lineHeight: 1.7, marginBottom: "1rem", color: "#222" }}>{q.t}</p>
+        <p style={{ fontSize: 15, lineHeight: 1.7, marginBottom: ".65rem", color: "#222" }}>{q.t}</p>
+        <button
+          onClick={() => {
+            if (onPreguntaChange) onPreguntaChange(q.t);
+            // Dispatch custom event to open bot
+            window.dispatchEvent(new CustomEvent("abrirBot", { detail: { pregunta: q.t } }));
+          }}
+          style={{ fontSize: 12, color: BLUE, background: "#e8f0fb", border: "none", borderRadius: 20, padding: "4px 12px", cursor: "pointer", marginBottom: "1rem", fontWeight: 500 }}
+        >
+          💬 ¿Qué significa esta pregunta?
+        </button>
         <span style={{ fontSize: 11, color: "#888", background: "#f0f2f5", borderRadius: 4, padding: "3px 8px", display: "inline-block", marginBottom: "1.1rem" }}>
           📋 {q.n}
         </span>

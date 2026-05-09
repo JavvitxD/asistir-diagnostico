@@ -4,16 +4,20 @@ import Screen2Cuestionario from "./screens/Screen2Cuestionario";
 import Screen3Fechas from "./screens/Screen3Fechas";
 import Screen4Propuesta from "./screens/Screen4Propuesta";
 import AdminPanel from "./screens/AdminPanel";
+import FloatingBot from "./screens/FloatingBot";
+import { PREGUNTAS } from "./data/preguntas";
 
 export default function App() {
   const [screen, setScreen] = useState(1);
   const [empresa, setEmpresa] = useState({});
   const [respuestas, setRespuestas] = useState([]);
   const [fechas, setFechas] = useState({});
+  const [preguntaActual, setPreguntaActual] = useState("");
 
-  // Ruta /admin abre el panel
   const isAdmin = window.location.pathname === "/admin";
   if (isAdmin) return <AdminPanel />;
+
+  const enFormulario = screen === 2;
 
   return (
     <div style={{ maxWidth: 740, margin: "0 auto", padding: "1rem", fontFamily: "system-ui, sans-serif" }}>
@@ -24,6 +28,7 @@ export default function App() {
         <Screen2Cuestionario
           onNext={(resp) => { setRespuestas(resp); setScreen(3); }}
           onBack={() => setScreen(1)}
+          onPreguntaChange={(texto) => setPreguntaActual(texto)}
         />
       )}
       {screen === 3 && (
@@ -41,6 +46,15 @@ export default function App() {
           onRevisar={() => setScreen(2)}
         />
       )}
+
+      {/* Bot flotante en todas las pantallas excepto admin */}
+      <FloatingBot
+        preguntaActual={preguntaActual}
+        enFormulario={enFormulario}
+        empresa={empresa}
+        nosIdx={[]}
+        stats={{}}
+      />
     </div>
   );
 }
