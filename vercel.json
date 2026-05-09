@@ -1,8 +1,0 @@
-{
-  "buildCommand": "cd asistir-v9 && npm install && npm run build",
-  "outputDirectory": "asistir-v9/dist",
-  "rewrites": [
-    { "source": "/api/chat", "destination": "/asistir-v9/api/chat.js" },
-    { "source": "/(.*)", "destination": "/asistir-v9/dist/index.html" }
-  ]
-}
