@@ -3,13 +3,17 @@ import Screen1Datos from "./screens/Screen1Datos";
 import Screen2Cuestionario from "./screens/Screen2Cuestionario";
 import Screen3Fechas from "./screens/Screen3Fechas";
 import Screen4Propuesta from "./screens/Screen4Propuesta";
-import HeaderBar from "./components/HeaderBar";
+import AdminPanel from "./screens/AdminPanel";
 
 export default function App() {
   const [screen, setScreen] = useState(1);
   const [empresa, setEmpresa] = useState({});
   const [respuestas, setRespuestas] = useState([]);
   const [fechas, setFechas] = useState({});
+
+  // Ruta /admin abre el panel
+  const isAdmin = window.location.pathname === "/admin";
+  if (isAdmin) return <AdminPanel />;
 
   return (
     <div style={{ maxWidth: 740, margin: "0 auto", padding: "1rem", fontFamily: "system-ui, sans-serif" }}>
