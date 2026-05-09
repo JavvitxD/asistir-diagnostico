@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { PREGUNTAS, ETAPA_NOMBRE, BAR_COLOR } from "../data/preguntas";
 import { calcStats, getNosIdx, getPrioridad, mesDesde, semaforo } from "../utils/stats";
+import ChatBot from "./ChatBot";
 
 const BLUE = "#1a4480";
 
@@ -213,6 +214,13 @@ export default function Screen4Propuesta({ empresa, respuestas, fechas, onReinic
               </div>
             </>
           )}
+
+          {/* Bot de preguntas */}
+          <ChatBot
+            empresa={empresa}
+            nosIdx={nosIdx}
+            stats={stats}
+          />
 
           <div style={{ borderTop: "1px solid #e8ecf2", marginTop: "1.5rem", paddingTop: "1rem", fontSize: 12, color: "#aaa", textAlign: "center" }}>
             Diagnóstico generado por ASISTIR IPS Y HSE · www.asistiripsyhse.com.co · F-MP-002 v2
