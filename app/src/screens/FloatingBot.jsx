@@ -112,7 +112,7 @@ export default function FloatingBot({ preguntaActual, enFormulario, empresa, nos
     setCargando(true);
     try {
       const historial = nuevosMensajes.map(m => ({ role: m.rol === "usuario" ? "user" : "assistant", content: m.texto }));
-      const response = await fetch("/api/chat", {
+      const response = await fetch("/.netlify/functions/chat", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ system: SYSTEM_PROMPT, messages: historial }),
       });
@@ -143,7 +143,7 @@ export default function FloatingBot({ preguntaActual, enFormulario, empresa, nos
         content: m.texto,
       }));
 
-      const response = await fetch("/api/chat", {
+      const response = await fetch("/.netlify/functions/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
