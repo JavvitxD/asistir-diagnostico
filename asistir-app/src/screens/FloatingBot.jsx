@@ -112,15 +112,15 @@ export default function FloatingBot({ preguntaActual, enFormulario, empresa, nos
     setCargando(true);
     try {
       const historial = nuevosMensajes.map(m => ({ role: m.rol === "usuario" ? "user" : "assistant", content: m.texto }));
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+      const response = await fetch("/api/chat", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 600, system: SYSTEM_PROMPT, messages: historial }),
+        body: JSON.stringify({ system: SYSTEM_PROMPT, messages: historial }),
       });
       const data = await response.json();
-      const respuesta = data.content?.[0]?.text || "No pude procesar su pregunta. Contáctenos: (310) 297-3991.";
+      const respuesta = data.text || "No pude procesar su pregunta. Contáctenos: (310) 297-3991.";
       setMensajes(prev => [...prev, { rol: "bot", texto: respuesta }]);
     } catch {
-      setMensajes(prev => [...prev, { rol: "bot", texto: "Error de conexión. Intente de nuevo." }]);
+      setMensajes(prev => [...prev, { rol: "bot", texto: "Error de conexión. Intente de nuevo o llámenos: (310) 297-3991." }]);
     } finally { setCargando(false); }
   };
 
@@ -129,7 +129,6 @@ export default function FloatingBot({ preguntaActual, enFormulario, empresa, nos
     if (!msg || cargando) return;
     setInput("");
 
-    // Contexto de la pregunta actual
     const contexto = enFormulario && preguntaActual
       ? `\n\n[CONTEXTO: El usuario está respondiendo la pregunta del formulario: "${preguntaActual}"]`
       : "";
@@ -144,20 +143,17 @@ export default function FloatingBot({ preguntaActual, enFormulario, empresa, nos
         content: m.texto,
       }));
 
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+      const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 600,
           system: SYSTEM_PROMPT + contexto,
           messages: historial,
         }),
       });
 
       const data = await response.json();
-      const respuesta = data.content?.[0]?.text ||
-        "Lo siento, no pude procesar su pregunta. Contáctenos: (310) 297-3991.";
+      const respuesta = data.text || "Lo siento, no pude procesar su pregunta. Contáctenos: (310) 297-3991.";
       setMensajes(prev => [...prev, { rol: "bot", texto: respuesta }]);
       if (!abierto) setNoLeido(true);
     } catch {
