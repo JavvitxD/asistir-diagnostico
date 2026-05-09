@@ -15,7 +15,7 @@ function MetricCard({ label, value, color }) {
 }
 
 function Card({ children }) {
-  return <div style={{ background: "#fff", border: "1px solid #e0e6f0", borderRadius: 12, padding: "1.1rem 1.25rem", marginBottom: ".5rem" }}>{children}</div>;
+  return <div style={{ background: "#fff", border: "1px solid #e0e6f0", borderRadius: 12, padding: "1.1rem 1.25rem", marginBottom: ".75rem" }}>{children}</div>;
 }
 
 function Section({ title, icon, children }) {
@@ -54,25 +54,14 @@ export default function Screen4Propuesta({ empresa, respuestas, fechas, onReinic
     const guardar = async () => {
       try {
         const { error } = await supabase.from("diagnosticos").insert({
-          empresa: empresa.empresa,
-          sector: empresa.sector,
-          workers: empresa.workers,
-          responsable: empresa.responsable,
-          correo: empresa.correo,
-          ciudad: empresa.ciudad,
-          fecha_inicio: fechas.inicio,
-          fecha_limite: fechas.limite,
-          plazo: fechas.plazo,
-          respuestas: respuestas,
-          stats: stats,
-          cumplimiento_total: stats.total,
-          items_faltantes: nosIdx.length,
+          empresa: empresa.empresa, sector: empresa.sector, workers: empresa.workers,
+          responsable: empresa.responsable, correo: empresa.correo, ciudad: empresa.ciudad,
+          fecha_inicio: fechas.inicio, fecha_limite: fechas.limite, plazo: fechas.plazo,
+          respuestas, stats, cumplimiento_total: stats.total, items_faltantes: nosIdx.length,
         });
         if (error) setErrorGuardado("No se pudo guardar el diagnóstico.");
         else setGuardado(true);
-      } catch {
-        setErrorGuardado("Error de conexión.");
-      }
+      } catch { setErrorGuardado("Error de conexión."); }
     };
     guardar();
   }, []);
@@ -88,21 +77,19 @@ export default function Screen4Propuesta({ empresa, respuestas, fechas, onReinic
         }
       `}</style>
 
+      {/* Botones */}
       <div className="no-print" style={{ display: "flex", gap: 10, marginBottom: "1rem", flexWrap: "wrap", alignItems: "center" }}>
         <button onClick={() => window.print()} style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
           ⬇ Descargar / Imprimir PDF
         </button>
-        <button onClick={onRevisar} style={{ background: "none", border: "1px solid #d0d7e3", borderRadius: 8, padding: "10px 20px", fontSize: 14, cursor: "pointer" }}>
-          ✏ Revisar respuestas
-        </button>
-        <button onClick={onReiniciar} style={{ background: "none", border: "1px solid #d0d7e3", borderRadius: 8, padding: "10px 20px", fontSize: 14, cursor: "pointer" }}>
-          ↺ Nuevo diagnóstico
-        </button>
+        <button onClick={onRevisar} style={{ background: "none", border: "1px solid #d0d7e3", borderRadius: 8, padding: "10px 20px", fontSize: 14, cursor: "pointer" }}>✏ Revisar respuestas</button>
+        <button onClick={onReiniciar} style={{ background: "none", border: "1px solid #d0d7e3", borderRadius: 8, padding: "10px 20px", fontSize: 14, cursor: "pointer" }}>↺ Nuevo diagnóstico</button>
         {guardado && <span style={{ fontSize: 12, color: "#0F6E56", background: "#E8F8F2", borderRadius: 6, padding: "4px 10px" }}>✓ Diagnóstico guardado</span>}
         {errorGuardado && <span style={{ fontSize: 12, color: "#A32D2D", background: "#FCEBEB", borderRadius: 6, padding: "4px 10px" }}>⚠ {errorGuardado}</span>}
       </div>
 
       <div id="propuesta-print" style={{ border: "1px solid #e0e6f0", borderRadius: 12, overflow: "hidden" }}>
+        {/* Header */}
         <div style={{ background: BLUE, padding: "1.25rem 1.5rem", color: "#fff" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: ".5rem" }}>
             <div style={{ width: 32, height: 32, background: "rgba(255,255,255,.15)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>♥</div>
@@ -118,25 +105,25 @@ export default function Screen4Propuesta({ empresa, respuestas, fechas, onReinic
         </div>
 
         <div style={{ padding: "1.5rem" }}>
+          {/* Banner */}
           {nosIdx.length === 0 ? (
             <div style={{ background: "#E8F8F2", borderRadius: 8, padding: ".75rem 1rem", fontSize: 13, color: "#0F6E56", marginBottom: "1.25rem" }}>
-              ✅ ¡Excelente! El programa cumple con todos los ítems verificados.
+              ✅ ¡Excelente! El programa cumple con todos los ítems verificados. Asistir IPS y HSE los acompañará en el mantenimiento del ciclo PHVA.
             </div>
           ) : (
-            <div style={{ background: "#e8f0fb", borderRadius: 8, padding: ".75rem 1rem", fontSize: 13, color: BLUE, marginBottom: "1.25rem", lineHeight: 1.5 }}>
-              ⓘ Se identificaron <strong>{nosIdx.length}</strong> ítem{nosIdx.length !== 1 ? "s" : ""} por implementar. Cumplimiento global: <strong>{stats.total}%</strong>
+            <div style={{ background: "#e8f0fb", borderRadius: 8, padding: ".75rem 1rem", fontSize: 13, color: BLUE, marginBottom: "1.25rem", lineHeight: 1.6 }}>
+              ⓘ Se identificaron <strong>{nosIdx.length}</strong> oportunidad{nosIdx.length !== 1 ? "es" : ""} de mejora. El cumplimiento global actual es del <strong>{stats.total}%</strong>. Un asesor de Asistir se comunicará para validar los resultados y presentar la propuesta formal.
             </div>
           )}
 
+          {/* Métricas PHVA */}
           <Section title="Cumplimiento por etapa PHVA" icon="📊">
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10, marginBottom: "1.25rem" }}>
-              {["P", "H", "V", "A"].map((e) => (
-                <MetricCard key={e} label={ETAPA_NOMBRE[e]} value={stats[e].pct + "%"} color={semaforo(stats[e].pct)} />
-              ))}
+              {["P","H","V","A"].map(e => <MetricCard key={e} label={ETAPA_NOMBRE[e]} value={stats[e].pct + "%"} color={semaforo(stats[e].pct)} />)}
               <MetricCard label="Total general" value={stats.total + "%"} color={semaforo(stats.total)} />
             </div>
             <Card>
-              {["P", "H", "V", "A"].map((e) => (
+              {["P","H","V","A"].map(e => (
                 <div key={e} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 9 }}>
                   <div style={{ fontSize: 12, width: 64, color: "#666", flexShrink: 0 }}>{ETAPA_NOMBRE[e]}</div>
                   <div style={{ flex: 1, height: 18, background: "#eef1f7", borderRadius: 4, overflow: "hidden" }}>
@@ -151,39 +138,41 @@ export default function Screen4Propuesta({ empresa, respuestas, fechas, onReinic
 
           {nosIdx.length > 0 && (
             <>
-              <Section title={`Documentos faltantes (${nosIdx.length})`} icon="📁">
-                <Card>
-                  {nosIdx.slice(0, 12).map((i) => (
-                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #f0f2f5", fontSize: 13 }}>
-                      <span style={{ color: "#E24B4A", flexShrink: 0 }}>✗</span>
-                      <span style={{ flex: 1 }}>{PREGUNTAS[i].d}</span>
-                      <span style={{ fontSize: 11, background: "#f0f2f5", borderRadius: 4, padding: "2px 7px", color: "#666", whiteSpace: "nowrap" }}>{PREGUNTAS[i].n}</span>
+              {/* SERVICIOS ASISTIR — sección principal mejorada */}
+              <Section title={`Servicios de Asistir recomendados (${nosIdx.length})`} icon="🏥">
+                <p style={{ fontSize: 13, color: "#555", marginBottom: "1rem", lineHeight: 1.6 }}>
+                  Basado en su diagnóstico, Asistir IPS y HSE puede acompañarle en la implementación de los siguientes servicios. Un asesor validará estos resultados con usted en una reunión de alcance.
+                </p>
+                {nosIdx.map((i) => {
+                  const q = PREGUNTAS[i];
+                  const prioBg = q.e === "P" ? "#FCEBEB" : q.e === "H" ? "#FFF8EC" : "#E8F8F2";
+                  const prioC  = q.e === "P" ? "#A32D2D" : q.e === "H" ? "#854F0B" : "#0F6E56";
+                  const prioL  = q.e === "P" ? "Alta"    : q.e === "H" ? "Media"   : "Baja";
+                  return (
+                    <div key={i} style={{ background: "#fff", border: "1px solid #e0e6f0", borderRadius: 10, padding: "1rem 1.1rem", marginBottom: ".65rem", display: "flex", gap: 12, alignItems: "flex-start" }}>
+                      <div style={{ fontSize: 22, flexShrink: 0, marginTop: 2 }}>{q.icono}</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: BLUE }}>{q.servicio}</div>
+                          <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: prioBg, color: prioC }}>Prioridad {prioL}</span>
+                        </div>
+                        <div style={{ fontSize: 13, color: "#555", lineHeight: 1.6, marginBottom: 6 }}>{q.desc_servicio}</div>
+                        <div style={{ fontSize: 11, color: "#999", background: "#f5f7fa", borderRadius: 4, padding: "2px 8px", display: "inline-block" }}>📋 {q.n}</div>
+                      </div>
                     </div>
-                  ))}
-                  {nosIdx.length > 12 && <p style={{ fontSize: 12, color: "#999", paddingTop: 6 }}>+ {nosIdx.length - 12} documentos adicionales.</p>}
-                </Card>
+                  );
+                })}
               </Section>
 
-              <Section title="Marco normativo a fortalecer" icon="📜">
-                <Card>
-                  {Object.entries(normSet).map(([n, c]) => (
-                    <div key={n} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #f0f2f5", fontSize: 13 }}>
-                      <span style={{ color: BLUE, flexShrink: 0 }}>📋</span>
-                      <span style={{ flex: 1, fontWeight: 600 }}>{n}</span>
-                      <span style={{ fontSize: 11, background: "#e8f0fb", color: BLUE, borderRadius: 4, padding: "2px 7px" }}>{c} ítem{c > 1 ? "s" : ""}</span>
-                    </div>
-                  ))}
-                </Card>
-              </Section>
-
+              {/* Plan de trabajo */}
               <Section title={`Plan de trabajo — ${plazo} meses`} icon="📅">
                 <Card>
                   <div style={{ display: "grid", gridTemplateColumns: "28px 1fr 80px 72px", gap: 8, fontSize: 11, color: "#999", fontWeight: 700, textTransform: "uppercase", paddingBottom: 6, borderBottom: "1px solid #eee" }}>
-                    <div /><div>Actividad</div><div>Fecha</div><div>Prioridad</div>
+                    <div/><div>Actividad</div><div>Fecha</div><div>Prioridad</div>
                   </div>
                   {acts.slice(0, 16).map((a, idx) => {
                     const prioBg = a.prio === "Alta" ? "#FCEBEB" : a.prio === "Media" ? "#FFF8EC" : "#E8F8F2";
-                    const prioC = a.prio === "Alta" ? "#A32D2D" : a.prio === "Media" ? "#854F0B" : "#0F6E56";
+                    const prioC  = a.prio === "Alta" ? "#A32D2D" : a.prio === "Media" ? "#854F0B" : "#0F6E56";
                     return (
                       <div key={idx} style={{ display: "grid", gridTemplateColumns: "28px 1fr 80px 72px", gap: 8, padding: ".55rem 0", borderBottom: "1px solid #f5f7fa", fontSize: 13 }}>
                         <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#e8f0fb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: BLUE }}>{idx + 1}</div>
@@ -197,21 +186,36 @@ export default function Screen4Propuesta({ empresa, respuestas, fechas, onReinic
                 </Card>
               </Section>
 
-              <Section title="Estimado de inversión" icon="💰">
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: ".5rem" }}>
-                  <MetricCard label="Ítems a implementar" value={nosIdx.length} />
-                  <MetricCard label="Estimado referencial" value={"$" + costo} />
-                </div>
-                <p style={{ fontSize: 12, color: "#999", lineHeight: 1.5 }}>
-                  * Valor estimado de referencia. Asistir emitirá cotización formal tras reunión de alcance.<br />
-                  📧 gestion.negocios@asistiripsyhse.com.co · 📞 3204966084 · 3102793991
-                </p>
+              {/* Marco normativo */}
+              <Section title="Marco normativo a fortalecer" icon="📜">
+                <Card>
+                  {Object.entries(normSet).map(([n, c]) => (
+                    <div key={n} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #f0f2f5", fontSize: 13 }}>
+                      <span style={{ color: BLUE }}>📋</span>
+                      <span style={{ flex: 1, fontWeight: 600 }}>{n}</span>
+                      <span style={{ fontSize: 11, background: "#e8f0fb", color: BLUE, borderRadius: 4, padding: "2px 7px" }}>{c} ítem{c > 1 ? "s" : ""}</span>
+                    </div>
+                  ))}
+                </Card>
               </Section>
+
+              {/* CTA contacto */}
+              <div style={{ background: BLUE, borderRadius: 12, padding: "1.25rem 1.5rem", marginTop: "1.5rem", color: "#fff" }}>
+                <div style={{ fontSize: 15, fontWeight: 700, marginBottom: ".4rem" }}>¿Listo para implementar?</div>
+                <div style={{ fontSize: 13, opacity: .85, lineHeight: 1.6, marginBottom: "1rem" }}>
+                  Un asesor de Asistir IPS y HSE se reunirá con usted para validar los resultados de este diagnóstico y presentar una cotización formal ajustada a sus necesidades.
+                </div>
+                <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap", fontSize: 13 }}>
+                  <span>📧 gestion.negocios@asistiripsyhse.com.co</span>
+                  <span>📞 310 297-3991 · 320 496-6084</span>
+                  <span>📍 Calle 17 con Cra. 27, Yopal</span>
+                </div>
+              </div>
             </>
           )}
 
           <div style={{ borderTop: "1px solid #e8ecf2", marginTop: "1.5rem", paddingTop: "1rem", fontSize: 12, color: "#aaa", textAlign: "center" }}>
-            Diagnóstico generado por ASISTIR IPS Y HSE · Calle 17 N° 27-56, Yopal · www.asistiripsyhse.com.co
+            Diagnóstico generado por ASISTIR IPS Y HSE · www.asistiripsyhse.com.co · F-MP-002 v2
           </div>
         </div>
       </div>
