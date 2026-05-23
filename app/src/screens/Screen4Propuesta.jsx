@@ -1,7 +1,3 @@
-bash
-
-cat /home/claude/Screen4Propuesta_v2.jsx
-Salida
 
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
