@@ -159,7 +159,7 @@ export default function FloatingBot({ preguntaActual, enFormulario }) {
         onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
         title="Asistente de Asistir IPS y HSE"
       >
-        {abierto ? <span style={{ color: "#fff", fontSize: 20 }}>×</span> : <span style={{ color: "#fff" }}>💬</span>}
+        {abierto ? <span style={{ color: "#fff", fontSize: 20 }}>×</span> : <img src="/logo.png" alt="Asistir" style={{ width: 38, height: 38, objectFit: "contain", borderRadius: "50%" }} />}
       </button>
 
       {/* Tooltip */}
