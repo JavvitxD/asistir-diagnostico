@@ -1,10 +1,17 @@
+bash
+
+cat /home/claude/AdminPanel.jsx
+Salida
+
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { PREGUNTAS, ETAPA_NOMBRE, BAR_COLOR } from "../data/preguntas";
 import { semaforo, getPrioridad, mesDesde } from "../utils/stats";
+import { calcularCotizacion } from "../data/tarifario";
 
 const BLUE = "#1a4480";
 const ADMIN_PASSWORD = "asistir2025";
+const WA_NUM = "573102793991";
 
 function fmt(ts) {
   if (!ts) return "—";
@@ -30,39 +37,51 @@ function Stat({ label, value, sub }) {
 // ─── PROPUESTA COMPLETA ──────────────────────────────────────────────────────
 function PropuestaCompleta({ d, onClose }) {
   if (!d) return null;
-  const resp    = d.respuestas || [];
-  const stats   = d.stats || {};
-  const nosIdx  = PREGUNTAS.map((q, i) => resp[i]?.val === "NO" ? i : -1).filter(i => i >= 0);
-  const plazo   = parseInt(d.plazo) || 6;
-  const hoy     = new Date().toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" });
-  const costo   = (nosIdx.length * 180000).toLocaleString("es-CO");
+  const resp   = d.respuestas || [];
+  const stats  = d.stats || {};
+  const nosIdx = PREGUNTAS.map((q, i) => resp[i]?.val === "NO" ? i : -1).filter(i => i >= 0);
+  const plazo  = parseInt(d.plazo) || 6;
+  const hoy    = new Date().toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" });
+
+  const cotizacion = calcularCotizacion(nosIdx, d.workers || "1 – 10");
 
   const acts = nosIdx.map((qi, idx) => ({
-    doc:  PREGUNTAS[qi].d,
+    doc:   PREGUNTAS[qi].d,
     norma: PREGUNTAS[qi].n,
-    prio: getPrioridad(PREGUNTAS[qi].e),
-    mes:  mesDesde(d.fecha_inicio, Math.floor(idx / (Math.max(nosIdx.length, 1) / plazo))),
+    prio:  getPrioridad(PREGUNTAS[qi].e),
+    mes:   mesDesde(d.fecha_inicio, Math.floor(idx / (Math.max(nosIdx.length, 1) / plazo))),
   }));
 
   const normSet = {};
   nosIdx.forEach(i => { normSet[PREGUNTAS[i].n] = (normSet[PREGUNTAS[i].n] || 0) + 1; });
+
+  const waMsg = encodeURIComponent(
+    `Hola! Soy asesor de Asistir IPS y HSE. Le contacto en relación al diagnóstico de Medicina Preventiva de *${d.empresa}*.\n\nResultado: ${d.cumplimiento_total || 0}% de cumplimiento.\n\nEstimado de inversión: $${cotizacion.totalMax.toLocaleString("es-CO")} COP\n\n¿Cuándo podemos agendar una reunión de alcance?`
+  );
+  const waURL = `https://wa.me/${WA_NUM}?text=${waMsg}`;
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", zIndex: 100, overflowY: "auto", padding: "1.5rem 1rem" }}>
       <div style={{ maxWidth: 760, margin: "0 auto", background: "#fff", borderRadius: 16, overflow: "hidden", boxShadow: "0 8px 40px rgba(0,0,0,.2)" }}>
 
         {/* Barra acciones */}
-        <div className="no-print" style={{ background: "#f5f7fa", padding: ".75rem 1.5rem", display: "flex", gap: 10, alignItems: "center", borderBottom: "1px solid #e0e6f0" }}>
+        <div className="no-print" style={{ background: "#f5f7fa", padding: ".75rem 1.5rem", display: "flex", gap: 10, alignItems: "center", borderBottom: "1px solid #e0e6f0", flexWrap: "wrap" }}>
           <button onClick={() => window.print()} style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 8, padding: "8px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
             ⬇ Imprimir / PDF
           </button>
+          <a href={waURL} target="_blank" rel="noopener noreferrer"
+            style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#25D366", color: "#fff", borderRadius: 8, padding: "8px 18px", fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+            </svg>
+            Contactar por WhatsApp
+          </a>
           <button onClick={onClose} style={{ background: "none", border: "1px solid #d0d7e3", borderRadius: 8, padding: "8px 18px", fontSize: 13, cursor: "pointer" }}>
             ✕ Cerrar
           </button>
           <span style={{ fontSize: 12, color: "#aaa", marginLeft: "auto" }}>Diagnóstico recibido: {fmt(d.created_at)}</span>
         </div>
 
-        {/* Propuesta */}
         <div id="propuesta-print">
           <style>{`@media print { .no-print { display:none!important; } body * { visibility:hidden; } #propuesta-print, #propuesta-print * { visibility:visible; } #propuesta-print { position:absolute;left:0;top:0;width:100%; } }`}</style>
 
@@ -82,18 +101,18 @@ function PropuestaCompleta({ d, onClose }) {
           </div>
 
           <div style={{ padding: "1.5rem" }}>
-            {/* Banner */}
+
             {nosIdx.length === 0 ? (
               <div style={{ background: "#E8F8F2", borderRadius: 8, padding: ".75rem 1rem", fontSize: 13, color: "#0F6E56", marginBottom: "1.25rem" }}>
                 ✅ El programa cumple con todos los ítems verificados.
               </div>
             ) : (
               <div style={{ background: "#e8f0fb", borderRadius: 8, padding: ".75rem 1rem", fontSize: 13, color: BLUE, marginBottom: "1.25rem", lineHeight: 1.6 }}>
-                ⓘ Se identificaron <strong>{nosIdx.length}</strong> oportunidad{nosIdx.length !== 1 ? "es" : ""} de mejora. Cumplimiento global: <strong>{stats.total || d.cumplimiento_total}%</strong>. Un asesor de Asistir validará estos resultados con la empresa.
+                ⓘ Se identificaron <strong>{nosIdx.length}</strong> oportunidad{nosIdx.length !== 1 ? "es" : ""} de mejora. Cumplimiento global: <strong>{d.cumplimiento_total || 0}%</strong>.
               </div>
             )}
 
-            {/* Métricas */}
+            {/* Métricas PHVA */}
             <h3 style={{ fontSize: 14, fontWeight: 700, color: BLUE, margin: "0 0 .75rem", display: "flex", alignItems: "center", gap: 7 }}>📊 Cumplimiento por etapa PHVA</h3>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px,1fr))", gap: 10, marginBottom: "1rem" }}>
               {["P","H","V","A"].map(e => (
@@ -124,13 +143,10 @@ function PropuestaCompleta({ d, onClose }) {
 
             {nosIdx.length > 0 && (
               <>
-                {/* Servicios Asistir */}
+                {/* Servicios */}
                 <h3 style={{ fontSize: 14, fontWeight: 700, color: BLUE, margin: "1.5rem 0 .5rem", display: "flex", alignItems: "center", gap: 7 }}>
-                  🏥 Servicios de Asistir recomendados ({nosIdx.length})
+                  🏥 Servicios recomendados ({nosIdx.length})
                 </h3>
-                <p style={{ fontSize: 13, color: "#555", marginBottom: "1rem", lineHeight: 1.6 }}>
-                  Basado en el diagnóstico, Asistir IPS y HSE puede acompañar a la empresa en la implementación de los siguientes servicios especializados:
-                </p>
                 {nosIdx.map(i => {
                   const q = PREGUNTAS[i];
                   const prioBg = q.e==="P" ? "#FCEBEB" : q.e==="H" ? "#FFF8EC" : "#E8F8F2";
@@ -175,7 +191,7 @@ function PropuestaCompleta({ d, onClose }) {
                 </div>
 
                 {/* Marco normativo */}
-                <h3 style={{ fontSize: 14, fontWeight: 700, color: BLUE, margin: "1.5rem 0 .65rem", display: "flex", alignItems: "center", gap: 7 }}>📜 Marco normativo a fortalecer</h3>
+                <h3 style={{ fontSize: 14, fontWeight: 700, color: BLUE, margin: "1.5rem 0 .65rem", display: "flex", alignItems: "center", gap: 7 }}>📜 Marco normativo</h3>
                 <div style={{ background: "#fff", border: "1px solid #e0e6f0", borderRadius: 12, padding: "1rem 1.25rem", marginBottom: ".75rem" }}>
                   {Object.entries(normSet).map(([n, c]) => (
                     <div key={n} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #f0f2f5", fontSize: 13 }}>
@@ -186,32 +202,74 @@ function PropuestaCompleta({ d, onClose }) {
                   ))}
                 </div>
 
-                {/* Estimado */}
-                <h3 style={{ fontSize: 14, fontWeight: 700, color: BLUE, margin: "1.5rem 0 .65rem", display: "flex", alignItems: "center", gap: 7 }}>💰 Estimado de inversión</h3>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: ".5rem" }}>
-                  <div style={{ background: "#f5f7fa", borderRadius: 8, padding: ".9rem", textAlign: "center" }}>
-                    <div style={{ fontSize: 11, color: "#888", textTransform: "uppercase", marginBottom: 6 }}>Ítems a implementar</div>
-                    <div style={{ fontSize: 24, fontWeight: 700, color: BLUE }}>{nosIdx.length}</div>
+                {/* ── COTIZACIÓN ADMIN (con valor mínimo y máximo) ── */}
+                <h3 style={{ fontSize: 14, fontWeight: 700, color: BLUE, margin: "1.5rem 0 .65rem", display: "flex", alignItems: "center", gap: 7 }}>
+                  💰 Cotización — Herramienta de negociación
+                </h3>
+
+                {/* Tarjetas resumen */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: ".75rem" }}>
+                  <div style={{ background: "#FFF8EC", border: "1px solid #F5C842", borderRadius: 10, padding: "1rem", textAlign: "center" }}>
+                    <div style={{ fontSize: 11, color: "#854F0B", textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>🔒 Valor mínimo (negociación)</div>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: "#854F0B" }}>${cotizacion.totalMin.toLocaleString("es-CO")}</div>
+                    <div style={{ fontSize: 11, color: "#854F0B", marginTop: 4 }}>Solo visible para el asesor</div>
                   </div>
-                  <div style={{ background: "#f5f7fa", borderRadius: 8, padding: ".9rem", textAlign: "center" }}>
-                    <div style={{ fontSize: 11, color: "#888", textTransform: "uppercase", marginBottom: 6 }}>Estimado referencial</div>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: BLUE }}>${costo}</div>
+                  <div style={{ background: "#e8f0fb", border: "1px solid #b8cfe8", borderRadius: 10, padding: "1rem", textAlign: "center" }}>
+                    <div style={{ fontSize: 11, color: BLUE, textTransform: "uppercase", fontWeight: 700, marginBottom: 4 }}>💼 Valor de referencia (cliente)</div>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: BLUE }}>${cotizacion.totalMax.toLocaleString("es-CO")}</div>
+                    <div style={{ fontSize: 11, color: "#555", marginTop: 4 }}>Visible en la propuesta del cliente</div>
                   </div>
                 </div>
-                <p style={{ fontSize: 12, color: "#999", lineHeight: 1.5, marginBottom: "1rem" }}>
-                  * Valor estimado de referencia. Cotización formal tras reunión de alcance con el equipo SST.
-                </p>
+
+                {/* Detalle por ítem */}
+                <div style={{ background: "#fff", border: "1px solid #e0e6f0", borderRadius: 12, padding: "1rem 1.25rem", marginBottom: ".75rem" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 120px 120px", gap: 8, fontSize: 11, color: "#999", fontWeight: 700, textTransform: "uppercase", paddingBottom: 6, borderBottom: "1px solid #eee" }}>
+                    <div>Servicio</div>
+                    <div style={{ textAlign: "right" }}>Mín. negoc.</div>
+                    <div style={{ textAlign: "right" }}>Ref. cliente</div>
+                  </div>
+                  {cotizacion.items.length > 0 ? cotizacion.items.map((item, idx) => (
+                    <div key={idx} style={{ display: "grid", gridTemplateColumns: "1fr 120px 120px", gap: 8, padding: ".55rem 0", borderBottom: "1px solid #f5f7fa", fontSize: 13, alignItems: "start" }}>
+                      <div>
+                        <div style={{ lineHeight: 1.5 }}>{item.nombre}</div>
+                        {item.nota && <div style={{ fontSize: 11, color: "#999", marginTop: 2 }}>{item.nota}</div>}
+                      </div>
+                      <div style={{ textAlign: "right", fontWeight: 600, color: "#854F0B", whiteSpace: "nowrap" }}>
+                        ${item.min.toLocaleString("es-CO")}
+                      </div>
+                      <div style={{ textAlign: "right", fontWeight: 600, color: BLUE, whiteSpace: "nowrap" }}>
+                        ${item.max.toLocaleString("es-CO")}
+                      </div>
+                    </div>
+                  )) : (
+                    <p style={{ fontSize: 13, color: "#999", padding: ".5rem 0" }}>Sin servicios cotizados en el tarifario.</p>
+                  )}
+                </div>
+
+                {/* Notas */}
+                <div style={{ background: "#f9fafb", border: "1px solid #e8ecf2", borderRadius: 8, padding: ".85rem 1rem", fontSize: 12, color: "#666", lineHeight: 1.8, marginBottom: "1rem" }}>
+                  <div style={{ fontWeight: 700, color: "#444", marginBottom: 4 }}>📌 Notas para el asesor:</div>
+                  {cotizacion.notas.map((nota, i) => (
+                    <div key={i} style={{ marginBottom: 3 }}>{nota}</div>
+                  ))}
+                </div>
 
                 {/* CTA */}
                 <div style={{ background: BLUE, borderRadius: 12, padding: "1.25rem 1.5rem", color: "#fff" }}>
                   <div style={{ fontSize: 15, fontWeight: 700, marginBottom: ".4rem" }}>Próximo paso</div>
                   <div style={{ fontSize: 13, opacity: .85, lineHeight: 1.6, marginBottom: ".75rem" }}>
-                    Un asesor de Asistir IPS y HSE se reunirá con la empresa para validar los resultados y presentar la cotización formal.
+                    Contacte al cliente para agendar la reunión de alcance y presentar la cotización formal.
                   </div>
-                  <div style={{ display: "flex", gap: "1.25rem", flexWrap: "wrap", fontSize: 13 }}>
+                  <a href={waURL} target="_blank" rel="noopener noreferrer"
+                    style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#25D366", color: "#fff", borderRadius: 8, padding: "10px 18px", fontSize: 13, fontWeight: 700, textDecoration: "none", marginBottom: ".75rem" }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                    </svg>
+                    Contactar a {d.responsable || "el cliente"} por WhatsApp
+                  </a>
+                  <div style={{ display: "flex", gap: "1.25rem", flexWrap: "wrap", fontSize: 12 }}>
                     <span>📧 gestion.negocios@asistiripsyhse.com.co</span>
-                    <span>📞 310 297-3991 · 320 496-6084</span>
-                    <span>📍 Calle 17 con Cra. 27, Yopal</span>
+                    <span>📞 (310) 297-3991 · (320) 496-6084</span>
                   </div>
                 </div>
               </>
@@ -257,12 +315,12 @@ function Login({ onLogin }) {
 
 // ─── PANEL PRINCIPAL ─────────────────────────────────────────────────────────
 export default function AdminPanel() {
-  const [auth, setAuth]         = useState(false);
-  const [data, setData]         = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [search, setSearch]     = useState("");
+  const [auth, setAuth]       = useState(false);
+  const [data, setData]       = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch]   = useState("");
   const [filtroSector, setFiltroSector] = useState("");
-  const [propuesta, setPropuesta] = useState(null); // diagnóstico seleccionado para ver propuesta
+  const [propuesta, setPropuesta] = useState(null);
 
   useEffect(() => {
     if (!auth) return;
@@ -293,7 +351,6 @@ export default function AdminPanel() {
     <div style={{ minHeight: "100vh", background: "#f0f4f9" }}>
       {propuesta && <PropuestaCompleta d={propuesta} onClose={() => setPropuesta(null)} />}
 
-      {/* Top bar */}
       <div style={{ background: BLUE, padding: ".85rem 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 34, height: 34, background: "rgba(255,255,255,.15)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>♥</div>
@@ -308,7 +365,6 @@ export default function AdminPanel() {
       </div>
 
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "1.5rem 1rem" }}>
-        {/* Stats */}
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: "1.5rem" }}>
           <Stat label="Total diagnósticos" value={total} sub="recibidos" />
           <Stat label="Cumplimiento promedio" value={promedio + "%"} sub="global" />
@@ -316,7 +372,6 @@ export default function AdminPanel() {
           <Stat label="Sectores" value={sectores.length} sub="diferentes" />
         </div>
 
-        {/* Filtros */}
         <div style={{ display: "flex", gap: 10, marginBottom: "1rem", flexWrap: "wrap" }}>
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="🔍 Buscar por empresa, ciudad o responsable..."
@@ -328,7 +383,6 @@ export default function AdminPanel() {
           </select>
         </div>
 
-        {/* Tabla */}
         {loading ? (
           <div style={{ textAlign: "center", padding: "3rem", color: "#aaa" }}>Cargando diagnósticos...</div>
         ) : filtered.length === 0 ? (
@@ -336,11 +390,7 @@ export default function AdminPanel() {
         ) : (
           <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e0e6f0", overflow: "hidden" }}>
             {filtered.map((d, idx) => (
-              <div key={d.id} style={{
-                padding: "1rem 1.25rem",
-                borderBottom: idx < filtered.length-1 ? "1px solid #f0f2f5" : "none",
-                display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap"
-              }}>
+              <div key={d.id} style={{ padding: "1rem 1.25rem", borderBottom: idx < filtered.length-1 ? "1px solid #f0f2f5" : "none", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
                 <div style={{ flex: "2 1 200px" }}>
                   <div style={{ fontWeight: 600, fontSize: 14, color: "#222" }}>{d.empresa || "—"}</div>
                   <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>{d.responsable || ""} {d.correo ? "· " + d.correo : ""}</div>
@@ -373,7 +423,7 @@ export default function AdminPanel() {
         )}
 
         <p style={{ fontSize: 12, color: "#aaa", marginTop: "1rem", textAlign: "center" }}>
-          Mostrando {filtered.length} de {total} diagnósticos · Haz clic en "Ver propuesta" para la propuesta completa con servicios de Asistir
+          Mostrando {filtered.length} de {total} diagnósticos · Haz clic en "Ver propuesta" para ver la propuesta completa
         </p>
       </div>
     </div>
