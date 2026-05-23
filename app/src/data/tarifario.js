@@ -1,7 +1,3 @@
-bash
-
-cat /home/claude/tarifario_v2.js
-Salida
 
 // TARIFARIO MEDICINA PREVENTIVA - ASISTIR IPS Y HSE
 // min = valor mínimo de negociación (solo visible para el asesor/admin)
