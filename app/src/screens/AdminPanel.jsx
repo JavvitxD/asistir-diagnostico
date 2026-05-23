@@ -1,7 +1,3 @@
-bash
-
-cat /home/claude/AdminPanel.jsx
-Salida
 
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
