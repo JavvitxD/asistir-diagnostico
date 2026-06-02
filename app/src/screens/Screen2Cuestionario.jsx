@@ -6,7 +6,7 @@ const BLUE = "#1a4480";
 
 export default function Screen2Cuestionario({ onNext, onBack, onPreguntaChange }) {
   const [qi, setQi] = useState(0);
-  const [resp, setResp] = useState(PREGUNTAS.map(() => ({ val: null, obs: "" })));
+  const [resp, setResp] = useState(PREGUNTAS.map(() => ({ val: null, obs: "", subtipo: "" })));
 
   // Notifica al padre qué pregunta está activa para el bot
   const irA = (idx) => {
@@ -19,8 +19,9 @@ export default function Screen2Cuestionario({ onNext, onBack, onPreguntaChange }
   const pct = Math.round(((qi + 1) / PREGUNTAS.length) * 100);
   const isLast = qi === PREGUNTAS.length - 1;
 
-  const setVal = (v) => setResp((prev) => prev.map((item, i) => i === qi ? { ...item, val: v } : item));
-  const setObs = (v) => setResp((prev) => prev.map((item, i) => i === qi ? { ...item, obs: v } : item));
+  const setVal     = (v) => setResp((prev) => prev.map((item, i) => i === qi ? { ...item, val: v, subtipo: "" } : item));
+  const setObs     = (v) => setResp((prev) => prev.map((item, i) => i === qi ? { ...item, obs: v } : item));
+  const setSubtipo = (v) => setResp((prev) => prev.map((item, i) => i === qi ? { ...item, subtipo: v } : item));
 
   const navNext = () => {
     if (isLast) { onNext(resp); return; }
@@ -61,7 +62,6 @@ export default function Screen2Cuestionario({ onNext, onBack, onPreguntaChange }
         <button
           onClick={() => {
             if (onPreguntaChange) onPreguntaChange(q.t);
-            // Dispatch custom event to open bot
             window.dispatchEvent(new CustomEvent("abrirBot", { detail: { pregunta: q.t } }));
           }}
           style={{ fontSize: 12, color: BLUE, background: "#e8f0fb", border: "none", borderRadius: 20, padding: "4px 12px", cursor: "pointer", marginBottom: "1rem", fontWeight: 500 }}
@@ -72,12 +72,37 @@ export default function Screen2Cuestionario({ onNext, onBack, onPreguntaChange }
           📋 {q.n}
         </span>
 
+        {/* Botones SI / NO / NA */}
         <div style={{ display: "flex", gap: 8, marginBottom: ".9rem", flexWrap: "wrap" }}>
           <button style={btnStyle("#0F6E56", "#E8F8F2", r.val === "SI")} onClick={() => setVal("SI")}>✓ Sí cumple</button>
           <button style={btnStyle("#A32D2D", "#FCEBEB", r.val === "NO")} onClick={() => setVal("NO")}>✗ No cumple</button>
           <button style={btnStyle("#555", "#f0f2f5", r.val === "NA")} onClick={() => setVal("NA")}>No aplica</button>
         </div>
 
+        {/* Desplegable de subtipo — solo si la pregunta tiene opciones y el cliente responde NO */}
+        {r.val === "NO" && q.opciones && (
+          <div style={{ marginBottom: ".9rem" }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "#555", display: "block", marginBottom: 6 }}>
+              ⚠️ ¿Qué tipo de riesgo prioritario requiere implementar?
+            </label>
+            <select
+              value={r.subtipo || ""}
+              onChange={(e) => setSubtipo(e.target.value)}
+              style={{
+                width: "100%", padding: "9px 12px", border: "1px solid #d0d7e3",
+                borderRadius: 8, fontSize: 13, background: "#fff", color: "#333",
+                boxSizing: "border-box", cursor: "pointer"
+              }}
+            >
+              <option value="">— Seleccione una opción —</option>
+              {q.opciones.map((op) => (
+                <option key={op} value={op}>{op}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Observaciones */}
         {r.val && (
           <textarea
             value={r.obs}
