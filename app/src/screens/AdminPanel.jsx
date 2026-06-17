@@ -14,6 +14,70 @@ function fmt(ts) {
   return new Date(ts).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" });
 }
 
+function fmtFechaCSV(ts) {
+  if (!ts) return "";
+  return new Date(ts).toLocaleDateString("es-CO", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+// Escapa valores para que el CSV no se rompa con comas, comillas o saltos de línea
+function csvEscape(value) {
+  if (value === null || value === undefined) return "";
+  const str = String(value);
+  if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+// Construye y descarga el archivo CSV a partir de un arreglo de diagnósticos
+function exportarCSV(diagnosticos) {
+  if (!diagnosticos || diagnosticos.length === 0) return;
+
+  const headers = [
+    "Empresa", "Responsable", "Correo", "Sector", "Ciudad",
+    "Numero_Trabajadores", "Porcentaje_Cumplimiento",
+    "Cotizacion_Minima", "Cotizacion_Referencia", "Fecha_Diagnostico"
+  ];
+
+  const filas = diagnosticos.map(d => {
+    const resp   = d.respuestas || [];
+    const nosIdx = PREGUNTAS.map((q, i) => resp[i]?.val === "NO" ? i : -1).filter(i => i >= 0);
+    const cotizacion = calcularCotizacion(nosIdx, d.workers || "1 – 10");
+
+    return [
+      csvEscape(d.empresa),
+      csvEscape(d.responsable),
+      csvEscape(d.correo),
+      csvEscape(d.sector),
+      csvEscape(d.ciudad),
+      csvEscape(d.workers),
+      csvEscape(d.cumplimiento_total || 0),
+      csvEscape(cotizacion.totalMin),
+      csvEscape(cotizacion.totalMax),
+      csvEscape(fmtFechaCSV(d.created_at)),
+    ].join(",");
+  });
+
+  const csvContent = [headers.join(","), ...filas].join("\n");
+
+  // BOM para que Excel reconozca tildes y caracteres especiales correctamente
+  const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+
+  const fechaArchivo = new Date().toISOString().slice(0, 10);
+  const nombreArchivo = diagnosticos.length === 1
+    ? `diagnostico_${(diagnosticos[0].empresa || "cliente").replace(/[^a-zA-Z0-9]/g, "_")}_${fechaArchivo}.csv`
+    : `diagnosticos_asistir_${fechaArchivo}.csv`;
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = nombreArchivo;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 function Badge({ pct }) {
   const bg = pct >= 80 ? "#E8F8F2" : pct >= 50 ? "#FFF8EC" : "#FCEBEB";
   const c  = pct >= 80 ? "#0F6E56" : pct >= 50 ? "#854F0B" : "#A32D2D";
@@ -64,6 +128,9 @@ function PropuestaCompleta({ d, onClose }) {
         <div className="no-print" style={{ background: "#f5f7fa", padding: ".75rem 1.5rem", display: "flex", gap: 10, alignItems: "center", borderBottom: "1px solid #e0e6f0", flexWrap: "wrap" }}>
           <button onClick={() => window.print()} style={{ background: BLUE, color: "#fff", border: "none", borderRadius: 8, padding: "8px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
             ⬇ Imprimir / PDF
+          </button>
+          <button onClick={() => exportarCSV([d])} style={{ background: "#0F6E56", color: "#fff", border: "none", borderRadius: 8, padding: "8px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+            📊 Exportar CSV
           </button>
           <a href={waURL} target="_blank" rel="noopener noreferrer"
             style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#25D366", color: "#fff", borderRadius: 8, padding: "8px 18px", fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
@@ -317,6 +384,7 @@ export default function AdminPanel() {
   const [search, setSearch]   = useState("");
   const [filtroSector, setFiltroSector] = useState("");
   const [propuesta, setPropuesta] = useState(null);
+  const [seleccionados, setSeleccionados] = useState(new Set());
 
   useEffect(() => {
     if (!auth) return;
@@ -342,6 +410,37 @@ export default function AdminPanel() {
     const mf = !filtroSector || d.sector === filtroSector;
     return ms && mf;
   });
+
+  const toggleSeleccion = (id) => {
+    setSeleccionados(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSeleccionarTodos = () => {
+    const idsFiltrados = filtered.map(d => d.id);
+    const todosSeleccionados = idsFiltrados.every(id => seleccionados.has(id)) && idsFiltrados.length > 0;
+    setSeleccionados(prev => {
+      const next = new Set(prev);
+      if (todosSeleccionados) {
+        idsFiltrados.forEach(id => next.delete(id));
+      } else {
+        idsFiltrados.forEach(id => next.add(id));
+      }
+      return next;
+    });
+  };
+
+  const handleExportarSeleccionados = () => {
+    const diagnosticosSeleccionados = data.filter(d => seleccionados.has(d.id));
+    exportarCSV(diagnosticosSeleccionados);
+  };
+
+  const idsFiltrados = filtered.map(d => d.id);
+  const todosFiltradosSeleccionados = idsFiltrados.length > 0 && idsFiltrados.every(id => seleccionados.has(id));
 
   return (
     <div style={{ minHeight: "100vh", background: "#f0f4f9" }}>
@@ -379,14 +478,50 @@ export default function AdminPanel() {
           </select>
         </div>
 
+        {/* Barra de exportación — aparece cuando hay algo seleccionado */}
+        {seleccionados.size > 0 && (
+          <div style={{ background: "#0F6E56", borderRadius: 10, padding: ".75rem 1.25rem", marginBottom: "1rem", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+            <span style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>
+              ✓ {seleccionados.size} diagnóstico{seleccionados.size !== 1 ? "s" : ""} seleccionado{seleccionados.size !== 1 ? "s" : ""}
+            </span>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => setSeleccionados(new Set())}
+                style={{ background: "rgba(255,255,255,.2)", color: "#fff", border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, cursor: "pointer" }}>
+                Cancelar
+              </button>
+              <button onClick={handleExportarSeleccionados}
+                style={{ background: "#fff", color: "#0F6E56", border: "none", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                📊 Exportar CSV ({seleccionados.size})
+              </button>
+            </div>
+          </div>
+        )}
+
         {loading ? (
           <div style={{ textAlign: "center", padding: "3rem", color: "#aaa" }}>Cargando diagnósticos...</div>
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: "center", padding: "3rem", color: "#aaa" }}>No se encontraron diagnósticos.</div>
         ) : (
           <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e0e6f0", overflow: "hidden" }}>
+            {/* Fila de "seleccionar todos" */}
+            <div style={{ padding: ".65rem 1.25rem", borderBottom: "1px solid #f0f2f5", background: "#f9fafb", display: "flex", alignItems: "center", gap: 10 }}>
+              <input
+                type="checkbox"
+                checked={todosFiltradosSeleccionados}
+                onChange={toggleSeleccionarTodos}
+                style={{ width: 16, height: 16, cursor: "pointer" }}
+              />
+              <span style={{ fontSize: 12, color: "#888" }}>Seleccionar todos los visibles ({filtered.length})</span>
+            </div>
+
             {filtered.map((d, idx) => (
-              <div key={d.id} style={{ padding: "1rem 1.25rem", borderBottom: idx < filtered.length-1 ? "1px solid #f0f2f5" : "none", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+              <div key={d.id} style={{ padding: "1rem 1.25rem", borderBottom: idx < filtered.length-1 ? "1px solid #f0f2f5" : "none", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", background: seleccionados.has(d.id) ? "#f0f9f6" : "transparent" }}>
+                <input
+                  type="checkbox"
+                  checked={seleccionados.has(d.id)}
+                  onChange={() => toggleSeleccion(d.id)}
+                  style={{ width: 16, height: 16, cursor: "pointer", flexShrink: 0 }}
+                />
                 <div style={{ flex: "2 1 200px" }}>
                   <div style={{ fontWeight: 600, fontSize: 14, color: "#222" }}>{d.empresa || "—"}</div>
                   <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>{d.responsable || ""} {d.correo ? "· " + d.correo : ""}</div>
@@ -419,7 +554,7 @@ export default function AdminPanel() {
         )}
 
         <p style={{ fontSize: 12, color: "#aaa", marginTop: "1rem", textAlign: "center" }}>
-          Mostrando {filtered.length} de {total} diagnósticos · Haz clic en "Ver propuesta" para ver la propuesta completa
+          Mostrando {filtered.length} de {total} diagnósticos · Marca las casillas para seleccionar y exportar a CSV
         </p>
       </div>
     </div>
