@@ -8,7 +8,7 @@ const label = { display: "block", fontSize: 12, fontWeight: 600, color: "#555", 
 const input = { width: "100%", padding: "9px 12px", border: "1px solid #d0d7e3", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box" };
 
 export default function Screen1Datos({ onNext }) {
-  const [form, setForm] = useState({ empresa: "", sector: "", workers: "", responsable: "", correo: "", ciudad: "" });
+  const [form, setForm] = useState({ empresa: "", sector: "", workers: "", responsable: "", correo: "", telefono: "", ciudad: "" });
   const [err, setErr] = useState("");
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -62,9 +62,15 @@ export default function Screen1Datos({ onNext }) {
           </div>
         </div>
 
-        <div style={field}>
-          <label style={label}>Ciudad</label>
-          <input style={input} placeholder="Ej: Yopal, Casanare" value={form.ciudad} onChange={set("ciudad")} />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+          <div style={field}>
+            <label style={label}>Teléfono / WhatsApp</label>
+            <input style={input} type="tel" placeholder="Ej: 3101234567" value={form.telefono} onChange={set("telefono")} />
+          </div>
+          <div style={field}>
+            <label style={label}>Ciudad</label>
+            <input style={input} placeholder="Ej: Yopal, Casanare" value={form.ciudad} onChange={set("ciudad")} />
+          </div>
         </div>
 
         {err && <p style={{ fontSize: 13, color: "#c0392b", marginBottom: "1rem" }}>{err}</p>}
