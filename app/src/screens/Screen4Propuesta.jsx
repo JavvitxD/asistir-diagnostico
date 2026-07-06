@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { PREGUNTAS, ETAPA_NOMBRE, BAR_COLOR } from "../data/preguntas";
@@ -32,7 +31,6 @@ function Section({ title, icon, children }) {
   );
 }
 
-// Agrupa items por categoría
 function agruparPorCategoria(items) {
   const grupos = {};
   items.forEach((item, idx) => {
@@ -61,7 +59,6 @@ export default function Screen4Propuesta({ empresa, respuestas, fechas, onReinic
   const hoy = new Date().toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" });
   const cotizacionBase = calcularCotizacion(nosIdx, empresa.workers || "1 – 10");
 
-  // Estado para checkboxes — todos seleccionados por defecto
   const [seleccionados, setSeleccionados] = useState(() =>
     cotizacionBase.items.map((_, i) => true)
   );
@@ -74,7 +71,6 @@ export default function Screen4Propuesta({ empresa, respuestas, fechas, onReinic
     setSeleccionados(cotizacionBase.items.map(() => valor));
   };
 
-  // Calcular totales según selección
   const itemsSeleccionados = cotizacionBase.items.filter((_, i) => seleccionados[i]);
   const totalMin = itemsSeleccionados.reduce((s, item) => s + item.min, 0);
   const totalMax = itemsSeleccionados.reduce((s, item) => s + item.max, 0);
@@ -93,7 +89,9 @@ export default function Screen4Propuesta({ empresa, respuestas, fechas, onReinic
       try {
         await supabase.from("diagnosticos").insert({
           empresa: empresa.empresa, sector: empresa.sector, workers: empresa.workers,
-          responsable: empresa.responsable, correo: empresa.correo, ciudad: empresa.ciudad,
+          responsable: empresa.responsable, correo: empresa.correo,
+          telefono: empresa.telefono,
+          ciudad: empresa.ciudad,
           fecha_inicio: fechas.inicio, fecha_limite: fechas.limite, plazo: fechas.plazo,
           respuestas: JSON.stringify(respuestas),
           items_faltantes: nosIdx.length,
@@ -112,7 +110,6 @@ export default function Screen4Propuesta({ empresa, respuestas, fechas, onReinic
   return (
     <div style={{ maxWidth: 740, margin: "0 auto", fontFamily: "system-ui, sans-serif" }}>
 
-      {/* Header */}
       <div style={{ background: BLUE, borderRadius: "0 0 16px 16px", padding: "1.25rem 1.5rem", marginBottom: "1.25rem", color: "#fff" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
           <div>
@@ -133,7 +130,6 @@ export default function Screen4Propuesta({ empresa, respuestas, fechas, onReinic
 
       <div style={{ padding: "0 .5rem" }}>
 
-        {/* Métricas */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: "1.25rem" }}>
           <MetricCard label="Cumplimiento" value={`${pct}%`} color={pctColor} />
           <MetricCard label="Ítems OK" value={stats.si} color="#0F6E56" />
@@ -141,7 +137,6 @@ export default function Screen4Propuesta({ empresa, respuestas, fechas, onReinic
           <MetricCard label="No aplica" value={stats.na} color="#888" />
         </div>
 
-        {/* Gráfico PHVA */}
         <Section title="Cumplimiento por etapa PHVA" icon="📊">
           <Card>
             {etapas.map(e => {
@@ -165,7 +160,6 @@ export default function Screen4Propuesta({ empresa, respuestas, fechas, onReinic
           </Card>
         </Section>
 
-        {/* Servicios recomendados */}
         {nosIdx.length > 0 && (
           <>
             <Section title="Servicios recomendados por Asistir IPS y HSE" icon="🏥">
@@ -186,7 +180,6 @@ export default function Screen4Propuesta({ empresa, respuestas, fechas, onReinic
               })}
             </Section>
 
-            {/* Plan de trabajo */}
             <Section title={`Plan de trabajo — ${plazo} meses`} icon="📅">
               <Card>
                 <div style={{ display: "grid", gridTemplateColumns: "28px 1fr 80px 72px", gap: 8, fontSize: 11, color: "#999", fontWeight: 700, textTransform: "uppercase", paddingBottom: 6, borderBottom: "1px solid #eee" }}>
@@ -208,10 +201,7 @@ export default function Screen4Propuesta({ empresa, respuestas, fechas, onReinic
               </Card>
             </Section>
 
-            {/* ── COTIZADORA INTERACTIVA ── */}
             <Section title="Cotización estimada — Seleccione los servicios" icon="💰">
-
-              {/* Banner total fijo en pantalla */}
               <div style={{
                 background: "linear-gradient(135deg, #1a4480 0%, #2563a8 100%)",
                 borderRadius: 12, padding: "1.25rem 1.5rem", marginBottom: ".75rem", color: "#fff",
@@ -232,7 +222,6 @@ export default function Screen4Propuesta({ empresa, respuestas, fechas, onReinic
                 </div>
               </div>
 
-              {/* Controles */}
               <div style={{ display: "flex", gap: 8, marginBottom: ".75rem" }}>
                 <button onClick={() => toggleTodos(true)}
                   style={{ fontSize: 12, padding: "6px 14px", border: "1px solid #d0d7e3", borderRadius: 8, background: "#fff", cursor: "pointer", color: BLUE, fontWeight: 600 }}>
@@ -244,7 +233,6 @@ export default function Screen4Propuesta({ empresa, respuestas, fechas, onReinic
                 </button>
               </div>
 
-              {/* Items agrupados por categoría */}
               {Object.entries(grupos).map(([categoria, items]) => (
                 <div key={categoria} style={{ marginBottom: ".75rem" }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 6, paddingLeft: 4 }}>
@@ -261,7 +249,6 @@ export default function Screen4Propuesta({ empresa, respuestas, fechas, onReinic
                             borderBottom: "1px solid #f5f7fa", cursor: "pointer",
                             opacity: sel ? 1 : 0.45, transition: "opacity .2s"
                           }}>
-                          {/* Checkbox */}
                           <div style={{
                             width: 20, height: 20, borderRadius: 5, flexShrink: 0, marginTop: 2,
                             background: sel ? BLUE : "#fff",
@@ -270,14 +257,10 @@ export default function Screen4Propuesta({ empresa, respuestas, fechas, onReinic
                           }}>
                             {sel && <span style={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>✓</span>}
                           </div>
-
-                          {/* Info */}
                           <div style={{ flex: 1 }}>
                             <div style={{ fontSize: 13, lineHeight: 1.5, fontWeight: sel ? 500 : 400 }}>{item.nombre}</div>
                             {item.nota && <div style={{ fontSize: 11, color: "#999", marginTop: 2 }}>{item.nota}</div>}
                           </div>
-
-                          {/* Precio */}
                           <div style={{ textAlign: "right", flexShrink: 0 }}>
                             <div style={{ fontSize: 13, fontWeight: 700, color: sel ? BLUE : "#aaa", whiteSpace: "nowrap" }}>
                               ${item.max.toLocaleString("es-CO")}
@@ -293,7 +276,6 @@ export default function Screen4Propuesta({ empresa, respuestas, fechas, onReinic
                 </div>
               ))}
 
-              {/* Notas */}
               <div style={{ background: "#f9fafb", border: "1px solid #e8ecf2", borderRadius: 8, padding: ".85rem 1rem", fontSize: 12, color: "#666", lineHeight: 1.8 }}>
                 <div style={{ fontWeight: 700, color: "#444", marginBottom: 4 }}>📌 Notas importantes:</div>
                 {cotizacionBase.notas.map((nota, i) => (
@@ -302,7 +284,6 @@ export default function Screen4Propuesta({ empresa, respuestas, fechas, onReinic
               </div>
             </Section>
 
-            {/* Marco normativo */}
             <Section title="Marco normativo a fortalecer" icon="📜">
               <Card>
                 {Object.entries(normSet).map(([n, c]) => (
@@ -317,7 +298,6 @@ export default function Screen4Propuesta({ empresa, respuestas, fechas, onReinic
           </>
         )}
 
-        {/* CTA + WhatsApp */}
         <div style={{ background: BLUE, borderRadius: 12, padding: "1.5rem", marginTop: "1.5rem", color: "#fff" }}>
           <div style={{ fontSize: 16, fontWeight: 700, marginBottom: ".5rem" }}>¿Listo para implementar?</div>
           <div style={{ fontSize: 13, opacity: .85, lineHeight: 1.7, marginBottom: ".5rem" }}>
@@ -331,7 +311,6 @@ export default function Screen4Propuesta({ empresa, respuestas, fechas, onReinic
           <div style={{ fontSize: 13, opacity: .75, lineHeight: 1.6, marginBottom: "1.25rem" }}>
             Un asesor de Asistir IPS y HSE se reunirá con usted para validar los resultados y presentar la cotización formal.
           </div>
-
           <a href={waURL} target="_blank" rel="noopener noreferrer"
             style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "#25D366", color: "#fff", borderRadius: 10, padding: "12px 20px", fontWeight: 700, fontSize: 14, textDecoration: "none", marginBottom: "1rem", boxShadow: "0 4px 12px rgba(0,0,0,.2)" }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
@@ -339,7 +318,6 @@ export default function Screen4Propuesta({ empresa, respuestas, fechas, onReinic
             </svg>
             Contactar asesor por WhatsApp
           </a>
-
           <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap", fontSize: 12, opacity: .8 }}>
             <span>📧 gestion.negocios@asistiripsyhse.com.co</span>
             <span>📞 (310) 297-3991 · (320) 496-6084</span>
@@ -347,7 +325,6 @@ export default function Screen4Propuesta({ empresa, respuestas, fechas, onReinic
           </div>
         </div>
 
-        {/* Footer */}
         <div style={{ borderTop: "1px solid #e8ecf2", marginTop: "1.5rem", paddingTop: "1rem", fontSize: 12, color: "#aaa", textAlign: "center", marginBottom: "2rem" }}>
           Diagnóstico generado por ASISTIR IPS Y HSE · www.asistiripsyhse.com.co · F-MP-002 v2
         </div>
