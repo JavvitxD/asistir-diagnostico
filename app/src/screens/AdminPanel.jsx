@@ -33,7 +33,7 @@ function exportarCSV(diagnosticos) {
   if (!diagnosticos || diagnosticos.length === 0) return;
 
   const headers = [
-    "Empresa","Sector","Numero_Trabajadores","Responsable_SST","Correo","Ciudad",
+    "Empresa","Sector","Numero_Trabajadores","Responsable_SST","Correo","Telefono","Ciudad",
     "Ultima_Auditoria_SST","Fecha_Inicio_Deseada","Fecha_Limite_Auditoria","Plazo_Implementacion_Meses",
     "Porcentaje_Cumplimiento_Total",
     "Items_SI","Items_NO","Items_NA","Items_Total",
@@ -48,19 +48,15 @@ function exportarCSV(diagnosticos) {
   const filas = diagnosticos.map(d => {
     const raw = d.respuestas || [];
     const parsedResp = typeof raw === "string" ? JSON.parse(raw) : raw;
-
     const nosIdx = PREGUNTAS.map((q, i) => parsedResp[i]?.val === "NO" ? i : -1).filter(i => i >= 0);
     const siIdx  = PREGUNTAS.map((q, i) => parsedResp[i]?.val === "SI" ? i : -1).filter(i => i >= 0);
     const naIdx  = PREGUNTAS.map((q, i) => parsedResp[i]?.val === "NA" ? i : -1).filter(i => i >= 0);
-
     const cotizacion = calcularCotizacion(nosIdx, d.workers || "1 – 10");
-
     const pctEtapa = (etapa) => {
       const idxs = PREGUNTAS.map((q, i) => q.e === etapa ? i : -1).filter(i => i >= 0);
       const si = idxs.filter(i => parsedResp[i]?.val === "SI").length;
       return idxs.length > 0 ? Math.round((si / idxs.length) * 100) : 0;
     };
-
     const servicios = nosIdx.map(i => PREGUNTAS[i].servicio).join(" | ");
     const normSet = {};
     nosIdx.forEach(i => { normSet[PREGUNTAS[i].n] = (normSet[PREGUNTAS[i].n] || 0) + 1; });
@@ -73,6 +69,7 @@ function exportarCSV(diagnosticos) {
       csvEscape(d.workers),
       csvEscape(d.responsable),
       csvEscape(d.correo),
+      csvEscape(d.telefono),
       csvEscape(d.ciudad),
       csvEscape(fmtMes(d.fecha_auditoria || "")),
       csvEscape(fmtMes(d.fecha_inicio || "")),
@@ -172,7 +169,7 @@ function PropuestaCompleta({ d, onClose }) {
               </div>
             </div>
             <div style={{ fontSize: 13, opacity: .85 }}>🏢 {d.empresa}{d.sector ? " · " + d.sector : ""}{d.workers ? " · " + d.workers + " trabajadores" : ""}{d.ciudad ? " · " + d.ciudad : ""}</div>
-            {d.responsable && <div style={{ fontSize: 12, opacity: .7, marginTop: 3 }}>Responsable SST: {d.responsable} · {d.correo}</div>}
+            {d.responsable && <div style={{ fontSize: 12, opacity: .7, marginTop: 3 }}>Responsable SST: {d.responsable} · {d.correo}{d.telefono ? " · " + d.telefono : ""}</div>}
           </div>
           <div style={{ padding: "1.5rem" }}>
             {nosIdx.length === 0 ? (
@@ -409,7 +406,6 @@ export default function AdminPanel() {
             {sectores.map(s => <option key={s}>{s}</option>)}
           </select>
         </div>
-
         {seleccionados.size > 0 && (
           <div style={{ background: "#0F6E56", borderRadius: 10, padding: ".75rem 1.25rem", marginBottom: "1rem", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
             <span style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>✓ {seleccionados.size} diagnóstico{seleccionados.size !== 1 ? "s" : ""} seleccionado{seleccionados.size !== 1 ? "s" : ""}</span>
@@ -421,7 +417,6 @@ export default function AdminPanel() {
             </div>
           </div>
         )}
-
         {loading ? (
           <div style={{ textAlign: "center", padding: "3rem", color: "#aaa" }}>Cargando diagnósticos...</div>
         ) : filtered.length === 0 ? (
@@ -437,7 +432,7 @@ export default function AdminPanel() {
                 <input type="checkbox" checked={seleccionados.has(d.id)} onChange={() => toggleSeleccion(d.id)} style={{ width: 16, height: 16, cursor: "pointer", flexShrink: 0 }} />
                 <div style={{ flex: "2 1 200px" }}>
                   <div style={{ fontWeight: 600, fontSize: 14, color: "#222" }}>{d.empresa || "—"}</div>
-                  <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>{d.responsable || ""} {d.correo ? "· " + d.correo : ""}</div>
+                  <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>{d.responsable || ""} {d.correo ? "· " + d.correo : ""} {d.telefono ? "· " + d.telefono : ""}</div>
                 </div>
                 <div style={{ flex: "1 1 100px", fontSize: 13, color: "#555" }}>
                   <div style={{ fontSize: 10, color: "#bbb", textTransform: "uppercase", marginBottom: 2 }}>Sector</div>
